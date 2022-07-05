@@ -1,310 +1,69 @@
-#include <stdlib.h>
+#define _STDCALL_SUPPORTED
 #include <GL/glut.h>
+#include <math.h>
+#include <stdlib.h>
+#include <windows.h>
+#include <stdio.h>
+#include <fstream>
+#include <iostream>
+using namespace std;
 
-float fTranslate;
-float fRotate;
-float fScale = 1.0f;	// set inital scale value to 1.0f
 
-bool bPersp = false;
-bool bAnim = false;
-bool bWire = false;
-bool light_flag = false;//ª∑æ≥π‚—’…´
-GLfloat color[] = { 1.0, 1.0, 1.0, 1.0 }; // ∂®“Â—’…´   
-int wHeight = 0;
-int wWidth = 0;
-//ª∑æ≥π‚
-GLfloat light_x = 0.0f;
-GLfloat light_y = 0.0f;
-GLfloat light_z = 0.0f;
-//æ€π‚µ∆
-GLfloat spot_x = 0.0f;
-GLfloat spot_y = 0.0f;
-GLfloat spot_z = 0.0f;
-GLfloat Angle = 5.0f;//æ€π‚µ∆Ω«∂»
-void Draw_Leg();
-
-void Draw_Table() // This function draws a triangle with RGB colors
+GLfloat pos[]={-2,4,5,1},
+        amb[]={0.3,0.3,0.3,1.0};
+GLfloat front_amb_diff[]={0.7,0.5,1.1,1.0};
+GLfloat back_amb_diff[]={0.4,0.7,1,1.0};
+GLfloat spe[]={0.25,0.25,0.25,1.0};
+GLfloat theta=0,dt=1.5,axes[3][3]={{1,0,0},{0,1,0},{0,0,1}};
+int  axis=0;
+void display(void)
 {
-    //∂®“Â±‰¡ø
-    GLfloat specular[] = { 0.6f,0.6f,0.6f,1.0f };
-    GLfloat color1[] = { 0.85f,0.65f,0.2f,1.0f };//Ωª∆…´
-    GLfloat color2[] = { 1.0f,0.0f,0.0f };
-    GLfloat color3[] = { 0.0f,1.0f,0.0f };
-    GLfloat color4[] = { 1.0f,1.0f,0.0f };
-    GLfloat color5[] = { 0.0f,1.0f,1.0f };
-    GLfloat color6[] = { 0.0f,0.0f,1.0f };
-    //≤Ë∫¯
-    glPushMatrix();
-    glMaterialfv(GL_FRONT, GL_SPECULAR, specular);//…Ë÷√æµ√Ê—’…´
-    glMateriali(GL_FRONT, GL_SHININESS, 50);//…Ë÷√æµ√Ê÷∏ ˝
-    glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, color1);//≤ƒ¡œµƒª∑æ≥∫Õ…¢…‰—’…´
-    glTranslatef(0, 0, 4 + 1);
-    glRotatef(90, 1, 0, 0);
-    glutSolidTeapot(1);
-    glPopMatrix();
-    //◊¿√Ê
-    glPushMatrix();
-    glMaterialfv(GL_FRONT, GL_SPECULAR, color2);//…Ë÷√æµ√Ê—’…´
-    glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, color2);//≤ƒ¡œµƒª∑æ≥∫Õ…¢…‰—’…´
-    glTranslatef(0, 0, 3.5);
-    glScalef(5, 4, 1);
-    glutSolidCube(1.0);
-    glPopMatrix();
-    //ÀƒÃıÕ»
-    glPushMatrix();
-    glMaterialfv(GL_FRONT, GL_SPECULAR, color3);//…Ë÷√æµ√Ê—’…´
-    glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, color3);//≤ƒ¡œµƒª∑æ≥∫Õ…¢…‰—’…´
-    glTranslatef(1.5, 1, 1.5);
-    Draw_Leg();
-    glPopMatrix();
-
-    glPushMatrix();
-    glMaterialfv(GL_FRONT, GL_SPECULAR, color4);//…Ë÷√æµ√Ê—’…´
-    glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, color4);//≤ƒ¡œµƒª∑æ≥∫Õ…¢…‰—’…´
-    glTranslatef(-1.5, 1, 1.5);
-    Draw_Leg();
-    glPopMatrix();
-
-    glPushMatrix();
-    glMaterialfv(GL_FRONT, GL_SPECULAR, color5);//…Ë÷√æµ√Ê—’…´
-    glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, color5);//≤ƒ¡œµƒª∑æ≥∫Õ…¢…‰—’…´
-    glTranslatef(1.5, -1, 1.5);
-    Draw_Leg();
-    glPopMatrix();
-
-    glPushMatrix();
-    glMaterialfv(GL_FRONT, GL_SPECULAR, color6);//…Ë÷√æµ√Ê—’…´
-    glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, color6);//≤ƒ¡œµƒª∑æ≥∫Õ…¢…‰—’…´
-    glTranslatef(-1.5, -1, 1.5);
-    Draw_Leg();
-    glPopMatrix();
-
+glClear(GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT);
+glPushMatrix();
+if(axis<3)
+glRotated(theta,axes[axis][0],axes[axis][1],axes[axis][2]);
+else
+{
+glPushMatrix();
+glRotated(theta,0,0,1);
+glLightfv(GL_LIGHT0,GL_POSITION,pos);
+glPopMatrix();
 }
-
-void Draw_Leg()
-{
-    glScalef(1, 1, 3);
-    glutSolidCube(1.0);
+glutSolidTorus(.4,1,48,96); // ÂõæÁâáË∞ÉÁî®ÂáΩÊï∞ÂèØ‰ª•ËÆæÁΩÆÂõæÁâáÁöÑÂ±ûÊÄß
+glPopMatrix();             // glutWireTeapot(); Ëå∂Â£∂
+glutSwapBuffers();         // glutSolidCone(); ÂúÜÈî•
 }
-
-void updateView(int width, int height)
+void idle(void)
 {
-    glViewport(0, 0, width, height);						// Reset The Current Viewport
-
-    glMatrixMode(GL_PROJECTION);						// Select The Projection Matrix
-    glLoadIdentity();									// Reset The Projection Matrix
-
-    float whRatio = (GLfloat)width / (GLfloat)height;
-    if (bPersp) {
-        gluPerspective(45.0f, whRatio, 0.1f, 100.0f);
-        //glFrustum(-3, 3, -3, 3, 3,100);
-    }
-    else {
-        glOrtho(-3, 3, -3, 3, -100, 100);
-    }
-
-    glMatrixMode(GL_MODELVIEW);							// Select The Modelview Matrix
+if(theta>=360)
+axis=(axis+1)%4;
+   theta=(theta<360)?theta+dt:dt;
+       glutPostRedisplay();
 }
-
-void reshape(int width, int height)
-{
-    if (height == 0)										// Prevent A Divide By Zero By
-    {
-        height = 1;										// Making Height Equal One
-    }
-
-    wHeight = height;
-    wWidth = width;
-
-    updateView(wHeight, wWidth);
-}
-
-void idle()
-{
-    glutPostRedisplay();
-}
-
-float eye[] = { 0, 0, 8 };
-float center[] = { 0, 0, 0 };
-
-void key(unsigned char k, int x, int y)
-{
-    switch (k)
-    {
-    case 27://ESC
-    case 'q': {exit(0); break; }//quit
-    case 'p': {bPersp = !bPersp; break; }//œ‘ æƒ£ Ω
-
-    case ' ': {bAnim = !bAnim; break; }//–˝◊™
-    case 'o': {bWire = !bWire; break; }//œﬂøÚ
-
-    case 'd': {//”“
-        eye[0] -= 0.2f;
-        center[0] -= 0.2f;
-        break;
-    }
-    case 'a': {//◊Û
-        eye[0] += 0.2f;
-        center[0] += 0.2f;
-        break;
-    }
-    case 'w': {//…œ
-        eye[1] -= 0.2f;
-        center[1] -= 0.2f;
-        break;
-    }
-    case 's': {//œ¬
-        eye[1] += 0.2f;
-        center[1] += 0.2f;
-        break;
-    }
-    case 'z': {//«∞
-        eye[2] -= 0.2f;
-        center[2] -= 0.2f;
-        break;
-    }
-    case 'c': {//∫Û
-        eye[2] += 0.2f;
-        center[2] += 0.2f;
-        break;
-    }
-    case 'j': {//ª∑æ≥π‚◊Û
-        light_x += 0.2f;
-        break;
-    }
-    case 'l': {//ª∑æ≥π‚”“
-        light_x -= 0.2f;
-        break;
-    }
-    case 'i': {//ª∑æ≥π‚…œ
-        light_y += 0.2f;
-        break;
-    }
-    case 'k': {//ª∑æ≥π‚œ¬
-        light_y -= 0.2f;
-        break;
-    }
-    case 'n': {//ª∑æ≥π‚«∞
-        light_z += 0.2f;
-        break;
-    }
-    case ',': {//ª∑æ≥π‚∫Û
-        light_z -= 0.2f;
-        break;
-    }
-    case 'u': {//ª∑æ≥π‚—’…´«–ªª
-        light_flag = !light_flag;
-        break;
-    }
-    case 'f': {//æ€π‚µ∆◊Û“∆
-        spot_x -= 0.05f;
-        break;
-    }
-    case 'h': {
-        spot_x += 0.05f;
-        break;
-    }
-    case 't': {
-        spot_y -= 0.05f;
-        break;
-    }
-    case 'g': {
-        spot_y += 0.05f;
-        break;
-    }
-    case 'v': {//æ€π‚µ∆«∞“∆
-        spot_z += 0.05f;
-        break;
-    }
-    case 'b': {//æ€π‚µ∆∫Û“∆
-        spot_z -= 0.05f;
-        break;
-    }
-    case 'r': {//Ω«∂»±‰¥Û
-        if (Angle <= 89.0f)
-            Angle += 0.2f;
-        break;
-    }
-    case 'y': {
-        if (Angle >= 1.0f)
-            Angle -= 0.2f;
-        break;
-    }
-    }
-
-    updateView(wHeight, wWidth);
-}
-
-
-void redraw()
-{
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glLoadIdentity();									// Reset The Current Modelview Matrix
-
-    gluLookAt(eye[0], eye[1], eye[2],
-        center[0], center[1], center[2],
-        0, 1, 0);				// ≥°æ∞£®0£¨0£¨0£©µƒ ”µ„÷––ƒ (0,5,50)£¨Y÷·œÚ…œ
-
-    if (bWire) {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    }
-    else {
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    }
-    glEnable(GL_DEPTH_TEST);//ø™∆Ù…Ó∂»≤‚ ‘
-    glEnable(GL_LIGHTING);//ø™∆Ùπ‚’’ƒ£ Ω
-
-    GLfloat white[] = { 1.0, 1.0, 1.0, 1.0 };//∂®“Âª∑æ≥π‚—’…´£∫∞◊…´
-    GLfloat light_pos[] = { 5.0 + light_x,5.0 + light_y,5.0 + light_z,1 };
-    //∂®“Âæ€π‚µ∆Œª÷√
-    GLfloat spot_pos[] = { 0.0f,5.0f,0.0f,1.0f };
-    //∂®“Âæ€π‚µ∆’’…‰∑ΩœÚ
-    GLfloat spot_angle[] = { 0.0f + spot_x,-1.0f + spot_y,0.0f + spot_z };
-    // «∑Ò∏ƒ±‰π‚’’—’…´
-    if (light_flag)
-        color[1] = color[3] = 0.0f;
-    else
-        color[1] = color[3] = 1.0f;
-
-
-    glLightfv(GL_LIGHT0, GL_POSITION, light_pos);//0∫≈π‚‘¥µƒŒª÷√
-    glLightfv(GL_LIGHT0, GL_SMOOTH, white);//…Ë÷√ª∑æ≥π‚—’…´
-    glLightfv(GL_LIGHT0, GL_DIFFUSE, white);                     //…Ë÷√¬˛…‰π‚≥…∑÷  
-    glLightfv(GL_LIGHT0, GL_AMBIENT, color);   //…Ë÷√µ⁄0∫≈π‚‘¥∂‡¥Œ∑¥…‰∫Ûµƒπ‚’’—’…´£®ª∑æ≥π‚—’…´£©
-    glEnable(GL_LIGHT0);//ø™∆Ù0∫≈π‚‘¥
-
-    glLightfv(GL_LIGHT1, GL_AMBIENT, color);    //…Ë÷√ª∑æ≥π‚≥…∑÷
-    glLightfv(GL_LIGHT1, GL_SPECULAR, white);                 //…Ë÷√æµ√Êπ‚≥…∑÷
-    glLightfv(GL_LIGHT1, GL_DIFFUSE, white);                     //…Ë÷√¬˛…‰π‚≥…∑÷
-
-    glLightfv(GL_LIGHT1, GL_POSITION, spot_pos);
-    glLightf(GL_LIGHT1, GL_SPOT_CUTOFF, Angle);            //≤√ºıΩ«∂»
-    glLightfv(GL_LIGHT1, GL_SPOT_DIRECTION, spot_angle);          //π‚‘¥∑ΩœÚ
-    glLightf(GL_LIGHT1, GL_SPOT_EXPONENT, 2.);                    //æ€ºØ∂»
-    glEnable(GL_LIGHT1);//ø™∆Ù1∫≈π‚‘¥
-
-    //	glTranslatef(0.0f, 0.0f,-6.0f);			// Place the triangle at Center
-    glRotatef(fRotate, 0, 1.0f, 0);			// Rotate around Y axis
-    glRotatef(-90, 1, 0, 0);
-    glScalef(0.2, 0.2, 0.2);
-    Draw_Table();						// Draw triangle
-
-    if (bAnim) fRotate += 0.5f;
-    glutSwapBuffers();
-}
-
-int main(int argc, char* argv[])
-{
-    glutInit(&argc, argv);
-    glutInitDisplayMode(GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE);
-    glutInitWindowSize(480, 480);
-    int windowHandle = glutCreateWindow("Simple GLUT App");
-
-    glutDisplayFunc(redraw);
-    glutReshapeFunc(reshape);
-    glutKeyboardFunc(key);
-    glutIdleFunc(idle);
-
-    glutMainLoop();
-    return;
+int main(int argc,char** argv){
+glutInit(&argc,argv);
+glutInitDisplayMode(GLUT_DOUBLE|GLUT_RGB|GLUT_DEPTH);
+glutInitWindowSize(500,500);
+glutInitWindowPosition(200,100);
+glutCreateWindow("GLUT Object");
+glClearColor(1,1,0,0);//ËÉåÊôØÈ¢úËâ≤ÈªÑËâ≤
+glEnable(GL_DEPTH_TEST);
+glMatrixMode(GL_PROJECTION);
+glLoadIdentity();
+gluPerspective(45,1.0,2,8);
+glMaterialfv(GL_FRONT,GL_AMBIENT_AND_DIFFUSE,front_amb_diff);
+glMaterialfv(GL_BACK,GL_AMBIENT_AND_DIFFUSE,back_amb_diff);
+glMaterialfv(GL_FRONT_AND_BACK,GL_SPECULAR,spe);
+glMaterialf(GL_FRONT_AND_BACK,GL_SHININESS,75);
+glLightfv(GL_LIGHT0,GL_AMBIENT,amb);
+glLightModeli(GL_LIGHT_MODEL_TWO_SIDE,GL_TRUE);
+glMatrixMode(GL_MODELVIEW);
+glLoadIdentity();
+glTranslated(0,0,-5);
+glLightfv(GL_LIGHT0,GL_POSITION,pos);
+glEnable(GL_LIGHTING);
+glEnable(GL_LIGHT0);
+glutDisplayFunc(display);
+glutIdleFunc(idle);
+glutMainLoop();
 }
