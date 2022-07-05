@@ -1,3 +1,4 @@
-用DDA算法实现画线，计算和取整过程不断重复使用，在两个端点相距越来越远时，运算时间也会原来越大
+通过Bresenham中点、改进Bresenham算法生成了直线段
 
-![111](https://user-images.githubusercontent.com/107969965/177317563-750f1a96-ec58-4015-85b4-210c9a462289.png)
+![image](https://user-images.githubusercontent.com/107969965/177324096-5fb2a984-be64-4886-a6cd-f01d755e70be.png)
+![image](https://user-images.githubusercontent.com/107969965/177324126-6441807e-2249-4e49-a88b-cec7c6e0fe87.png)
