@@ -1,185 +1,165 @@
+#include<windows.h>
 #include<GL/glut.h>
-#include <math.h>
-#include<iostream>
-using namespace std;
-GLfloat square[4][2];//¶¨ÒåÒ»¸öÕı·½ĞÎµÄ¶¥µã×ø±êÊı×é
-//Æ½ÒÆ£¨ÓÃ¼üÅÌµÄÉÏÏÂ×óÓÒ¼ü¿ØÖÆ£©
-void Translate(GLfloat Tx, GLfloat Ty)
-{
-	for (int i = 0; i < 4; i++) {
-		square[i][0] += Tx;              //Ïà¼Ó¾ÍÊÇÆ½ÒÆ
-		square[i][1] += Ty;
-	}
+#include<stdlib.h>
+#include<math.h>
+
+GLsizei winWidth = 600, winHeight = 600;
+
+GLfloat xwcMin = 0.0, xwcMax = 225.0;
+GLfloat ywcMin = 0.0, ywcMax = 225.0;
+
+class wcPt2D {
+public:
+	GLfloat x, y;
+};
+
+typedef GLfloat Matrix3x3[3][3];//å®šä¹‰ä¸€ä¸ªäºŒç»´çš„3*3çš„çŸ©é˜µ
+
+Matrix3x3 matComposite;
+
+const GLdouble pi = 3.12159;
+
+
+void init(void) {
+	glClearColor(1.0, 1.0, 1.0, 0.0);//äºæ¸…é™¤é¢œè‰²ç¼“å†²åŒºçš„é¢œè‰²
 }
-//±ÈÀı/Ëõ·Å£¨ÓÃ¼üÅÌµÄa/A¼ü¿ØÖÆxµÄËõ·Å,d/D¼ü¿ØÖÆyµÄËõ·Å£©
-void Scale(GLfloat Sx, GLfloat Sy)
-{
-	for (int i = 0; i < 4; i++) {
-		square[i][0] *= Sx;
-		square[i][1] *= Sy;
-	}
-}
-//Ğı×ª£¨ÓÃ¼üÅÌµÄr/R¼ü¿ØÖÆÄæÊ±ÕëºÍÕıÊ±ÕëĞı×ª£©
-void Rotate(GLfloat degree)
-{
-	for (int i = 0; i < 4; i++) {
-		int tmpX = square[i][0], tmpY = square[i][1];
-		square[i][0] = tmpX * cos(degree) - tmpY * sin(degree);
-		square[i][1] = tmpX * sin(degree) + tmpY * cos(degree);
-	}
-}
-//¶Ô³Æ£¨x¼ü¹ØÓÚxÖá¶Ô³Æ£¬y¼ü¹ØÓÚyÖá¶Ô³Æ£©
-void Symmetry(int flag)
-{
-	for (int i = 0; i < 4; i++) {
-		if (flag) {//µÈÓÚ1¹ØÓÚxÖá¶Ô³Æ
-			square[i][1] *= -1;
-		}
-		else {//µÈÓÚ0¹ØÓÚyÖá¶Ô³Æ
-			square[i][0] *= -1;
+
+void matrix3x3SetIdentity(Matrix3x3 matIdent3x3) {
+	GLint row, col;
+	for (row = 0; row < 3; row++) {
+		for (col = 0; col < 3; col++) {
+			matIdent3x3[row][col] = (row == col);
 		}
 	}
 }
-//ÓÃ»§×Ô¶¨Òå³õÊ¼»¯
-void myinit()
-{
-	//³õÊ¼»¯Õı·½ĞÎ¶¥µãÊı×é
-	square[0][0] = 50;		//100 ×óÉÏ
-	square[0][1] = 100;      
-	square[1][0] = 150.0;        
-	square[1][1] = 100.0;   //ÓÒÉÏ
-	square[2][0] = 100.0;   
-	square[2][1] = 0;    //-100
-	square[3][0] = 0;//0 
-	square[3][1] = 0;//0
 
+void matrix3x3PreMultiply(Matrix3x3 m1, Matrix3x3 m2) {
+	GLint row, col;
+	Matrix3x3 matTemp;
+	for (row = 0; row < 3; row++) {
+		for (col = 0; col < 3; col++) {
+			matTemp[row][col] = m1[row][0] * m2[0][col] + m1[row][1] * m2[1][col] + m1[row][2] * m2[2][col];
+		}
+	}
+	for (row = 0; row < 3; row++) {
+		for (col = 0; col < 3; col++) {
+			m2[row][col] = matTemp[row][col];
+		}
+	}
 }
-//´°¿Ú´óĞ¡±ä»¯µÄ»Øµ÷º¯Êı
-void reshape(GLsizei w, GLsizei h)
-{
-	glViewport(0, 0, w, h);//ÉèÖÃÊÓ¿Ú´óĞ¡±ÈÀıÊ¼ÖÕÓë´°¿ÚÒ»ÖÂ
+//å¹³ç§»åŠŸèƒ½çš„å‡½æ•°
+void translate2D(GLfloat tx, GLfloat ty) {
+	Matrix3x3 matTransl;
+	matrix3x3SetIdentity(matTransl);
+	matTransl[0][2] = tx;
+	matTransl[1][2] = ty;
+	matrix3x3PreMultiply(matTransl, matComposite);
+}
+//æ—‹è½¬åŠŸèƒ½çš„å‡½æ•°
+void rotate2D(wcPt2D pivotPt, GLfloat theta) {
+	Matrix3x3 matRot;
+	matrix3x3SetIdentity(matRot);
+	matRot[0][0] = cos(theta);
+	matRot[0][1] = -sin(theta);
+	matRot[0][2] = pivotPt.x * (1 - cos(theta)) + pivotPt.y * sin(theta);
 
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	gluOrtho2D(-500, 500, -500, 500);
+	matRot[1][0] = sin(theta);
+	matRot[1][1] = cos(theta);
+	matRot[1][2] = pivotPt.y * (1 - cos(theta)) - pivotPt.x * sin(theta);
+	matrix3x3PreMultiply(matRot, matComposite);
+}
+//æ”¾ç¼©åŠŸèƒ½çš„å‡½æ•°
+void scale2D(GLfloat sx, GLfloat sy, wcPt2D fixedPt) {
+	Matrix3x3 matScale;
+	matrix3x3SetIdentity(matScale);
+	matScale[0][0] = sx;
+	matScale[0][2] = (1 - sx) * fixedPt.x;
+	matScale[1][1] = sy;
+	matScale[1][2] = (1 - sy) * fixedPt.y;
+	matrix3x3PreMultiply(matScale,matComposite);
 }
 
-void display()
-{
-	//ÉèÖÃ±³¾°ÑÕÉ«Îª°×É«²¢Çå³ıÑÕÉ«»º³å
-	glClearColor(1.0, 1.0, 1.0, 1.0);
+void transformVerts2D(GLint nVerts, wcPt2D* verts) {
+	GLint k;
+	GLfloat temp;
+	for (k = 0; k < nVerts; k++) {
+		temp = matComposite[0][0] * verts[k].x + matComposite[0][1] * verts[k].y + matComposite[0][2];
+		verts[k].y = matComposite[1][0] * verts[k].x + matComposite[1][1] * verts[k].y + matComposite[1][2];
+		verts[k].x = temp;
+	}
+}
+
+//ç”»å‡ºä¸‰è§’å½¢
+void triangle(wcPt2D* verts) {
+	GLint k;
+	glBegin(GL_TRIANGLES);
+	for (k = 0; k < 3; k++) {
+		glVertex2f(verts[k].x, verts[k].y);
+	}
+	glEnd();
+}
+
+//å°†ç»è¿‡ç¿»è½¬ã€å¹³ç§»ã€æ”¾ç¼©åçš„å›¾åƒå‘ˆç°
+void displayFcn(void) {
+	GLint nVerts = 3;
+	wcPt2D verts[3] = { {50.0,25.0},{150.0,25.0},{100.0,100.0} };
+	wcPt2D centroidPt;
+	GLint k, xsun = 0, ysum = 0;
+	for (k = 0; k < nVerts; k++) {
+		xsun += verts[k].x;
+		ysum += verts[k].y;
+	}
+	centroidPt.x = GLfloat(xsun) / GLfloat(nVerts);
+	centroidPt.y = GLfloat(ysum) / GLfloat(nVerts);
+	wcPt2D pivPt, fixedPt;
+	pivPt = centroidPt;
+	fixedPt = centroidPt;
+
+	GLfloat tx = 0.0, ty = 100.0;
+	GLfloat sx = 0.5, sy = 0.5;
+	GLdouble theta = pi / 2.0;
+
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	//»­×ø±êÏµ
 	glColor3f(0.0, 0.0, 1.0);
-	glBegin(GL_LINES);
-	//»­xÖá
-	glVertex2f(400.0, 0.0);
-	glVertex2f(-400.0, 0.0);
-	//»­yÖá
-	glVertex2f(0.0, 400.0);
-	glVertex2f(0.0, -400.0);
-	glEnd();
-	glColor3f(0.0, 1.0, 0.0);
-	glPointSize(4.0);
-	glBegin(GL_POINTS);
-	//»­x¡¢yÖáÉÏµÄ×ø±ê
-	for (GLfloat i = -400.0; i <= 400.0; i += 100.0) {
-		glVertex2f(i, 0.0);
-		glVertex2f(0.0, i);
-	}
-	glEnd();
+	triangle(verts);
+	matrix3x3SetIdentity(matComposite);
 
-	//»­Õı·½ĞÎ
-	glColor4f(1.0, 0.0, 0.0, 0.1);
-	glLineWidth(2.0);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-	glBegin(GL_POLYGON);
-	glVertex2f(square[0][0], square[0][1]);
-	glVertex2f(square[1][0], square[1][1]);
-	glVertex2f(square[2][0], square[2][1]);
-	glVertex2f(square[3][0], square[3][1]);
-	glEnd();
+	scale2D(sx, sy, fixedPt);
+	rotate2D(pivPt, theta);
+	translate2D(tx, ty);
 
-	//½»»»Ç°ºó»º³åÇø
-	glutSwapBuffers();
+	transformVerts2D(nVerts, verts);
+
+	glColor3f(1.0, 0.0, 0.0);
+	triangle(verts);
+
+	glFlush();
 }
-//¼üÅÌÉÏÌØÊâ°´¼üµÄ»Øµ÷º¯Êı
-void processSpecialKeys(int key, int x, int y)
-{
-	switch (key) {
-	case GLUT_KEY_LEFT:
-		Translate(-100.0, 0);
-		break;
-	case GLUT_KEY_RIGHT:
-		Translate(100.0, 0.0);
-		break;
-	case GLUT_KEY_UP:
-		Translate(0.0, 100.0);
-		break;
-	case GLUT_KEY_DOWN:
-		Translate(0.0, -100.0);
-		break;
-	}
-	glutPostRedisplay();
+//æ”¹å˜çª—å£çš„å¤§å°æ—¶
+void winReshapeFcn(GLint newWidth, GLint newHeight) {
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluOrtho2D(xwcMin, xwcMax, ywcMin, ywcMax);
+	glClear(GL_COLOR_BUFFER_BIT);
 }
-//¼üÅÌÆÕÍ¨°´¼üµÄ»Øµ÷º¯Êı
-void processNormalKeys(unsigned char key, int x, int y)
-{
-	switch (key) {
-	case 97:	//"a"
-		Scale(0.5, 1.0);
-		break;
-	case 65:	//"A"
-		Scale(2.0, 1.0);
-		break;
-	case 100:	//"d"
-		Scale(1.0, 0.5);
-		break;
-	case 68:	//"D"
-		Scale(1.0, 2.0);
-		break;
-	case 114:	//"r"
-		Rotate(15.0);
-		break;
-	case 82:	//"R"
-		Rotate(-15.0);
-		break;
-	case 120:	//"x"
-		Symmetry(1);
-		break;
-	case 121:	//"y"
-		Symmetry(0);
-		break;
-	case 27:	//"esc"
-		exit(0);
-	}
-	glutPostRedisplay();
-}
-//Ö÷º¯Êı
-int main(int argc, char* argv[])
-{
+
+int main(int argc, char** argv) {
 	glutInit(&argc, argv);
-	//³õÊ¼»¯OPENGLÏÔÊ¾·½Ê½
-	glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
-	//Éè¶¨OPENGL´°¿ÚÎ»ÖÃºÍ´óĞ¡
-	glutInitWindowSize(400, 400);
-	glutInitWindowPosition(100, 100);
-	//´ò¿ª´°¿Ú
-	glutCreateWindow("¶à±ßĞÎµÄÆ½ÒÆ¡¢±ÈÀı£¨Ëõ·Å£©¡¢Ğı×ª¡¢¶Ô³Æ±ä»»");
-	cout << "ÊäÈëAºÍD½øĞĞ·Å´ó ÊäÈëaºÍd½øĞĞËõĞ¡" << endl;
-	cout << "ÊäÈëÉÏÏÂ×óÓÒ½øĞĞÆ½ÒÆ²Ù×÷" << endl;
-	cout << "ÊäÈërºÍR¼ü¿ØÖÆÄæÊ±ÕëºÍÕıÊ±ÕëĞı×ª" << endl;
-	cout << "x¼ü¹ØÓÚxÖá¶Ô³Æ£¬y¼ü¹ØÓÚyÖá¶Ô³Æ" << endl;
-	//µ÷ÓÃ³õÊ¼»¯º¯Êı
-	myinit();
-	//Éè¶¨´°¿Ú´óĞ¡±ä»¯µÄ»Øµ÷º¯Êı
-	glutReshapeFunc(reshape);
-	//Éè¶¨¼üÅÌ¿ØÖÆµÄ»Øµ÷º¯Êı
-	glutSpecialFunc(processSpecialKeys);
-	glutKeyboardFunc(processNormalKeys);
+	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+	glutInitWindowPosition(50, 50);
+	glutInitWindowSize(winWidth, winHeight);
+	glutCreateWindow("xxxxxxx");
 
-	glutDisplayFunc(display);
+	init();
+	glutDisplayFunc(displayFcn);
+	glutReshapeFunc(winReshapeFcn);
+
 	glutMainLoop();
-	return 0;
+	return 1;
 }
+
+
+
+
+
