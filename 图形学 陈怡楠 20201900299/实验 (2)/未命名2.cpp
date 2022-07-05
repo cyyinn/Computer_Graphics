@@ -1,30 +1,76 @@
-#include <GL/glut.h>      // (or others, depending on the system in use)
-
-void init (void)
+#include <windows.h>//windowsç³»ç»Ÿ
+#ifdef __APPLE__
+#include <GLUT/glut.h>
+#else
+#include <GL/glut.h>
+#endif
+#include <stdlib.h>
+#include <math.h>//å®ç°ç®—æ³•è¿‡ç¨‹ä¸­ç”¨åˆ°æ•°å­¦å‡½æ•°
+void init(void)
 {
-    glClearColor (1.0, 1.0, 1.0, 0.0);  // Ö¸¶¨Çå¿ÕÑÕÉ«£¨±³¾°É«£©Îª°×É«
-    gluOrtho2D (0.0, 400.0, 0.0, 300.0);   //Ö¸¶¨¶şÎ¬×ø±êÏµÖĞ±»ÏÔÊ¾µÄÇøÓò
+	glClearColor(1.0, 1.0, 1.0, 0.0);
+	//æŒ‡å®šæ¸…ç©ºé¢œè‰²ï¼ˆèƒŒæ™¯è‰²ï¼‰ä¸ºç™½è‰²
+		glMatrixMode(GL_PROJECTION);//Set projection parameters
+	gluOrtho2D(0.0, 400.0, 0.0, 400.0);
+	//æŒ‡å®šäºŒç»´åæ ‡ç³»ä¸­è¢«æ˜¾ç¤ºçš„åŒºåŸŸ
 }
-
-void display (void)
+void setPixel(GLint x,
+	GLint y)//ç”»ç‚¹å‡½æ•°
 {
-    glClear (GL_COLOR_BUFFER_BIT);  // Çå¿ÕÏÔÊ¾´°¿Ú
-    glColor3f (0.0, 0.0, 1.0);      // Ö¸¶¨Ç°¾°É«£¨µ±Ç°»æÖÆÑÕÉ«£©ÎªÀ¶É«
-    glBegin (GL_LINES);
-        glVertex2i (180, 15);       // Ö¸¶¨¶¥µã
-        glVertex2i (10, 145);
-    glEnd ( );
-    glFlush ( );     // Ê¹»æÖÆÁ¢¼´·´Ó³µ½ÆÁÄ»ÉÏ
+	glBegin(GL_POINTS);
+	glVertex2i(x, y);
+	glEnd();
 }
-
-void main (int argc, char** argv)
+inline int round(const float a)
 {
-    glutInit (&argc, argv);                         // ³õÊ¼ GLUT.
-    glutInitDisplayMode (GLUT_SINGLE | GLUT_RGB);   //Éè¶¨ÏÔÊ¾Ä£Ê½
-    glutInitWindowPosition (50, 100);   // Éè¶¨´°¿ÚÎ»ÖÃ
-    glutInitWindowSize (400, 300);      // Éè¶¨´°¿Ú´óĞ¡
-    glutCreateWindow ("An Example OpenGL Program"); // ÓÃÇ°ÃæÖ¸¶¨²ÎÊı´´½¨´°¿Ú£¬²¢¶¨Òå´°¿ÚÃû³Æ
-    init ( );                            // ½øĞĞÒ»Ğ©³õÊ¼»¯¹¤×÷
-    glutDisplayFunc (display);       // Ö¸¶¨»æÖÆµÄ»Øµ÷º¯Êı
-    glutMainLoop ( );          // ½øÈëÎŞÇîÑ­»·£¬µÈ´ıÊÂ¼ş´¦Àí
+	return int(a + 0.5);//å–æ•´æ“ä½œ
+}
+void lineDDA(int x0, int y0, int xEnd, int yEnd) {
+	int dx = xEnd - x0,
+		dy = yEnd - y0,
+		steps,
+		k;
+	float xIncrement, yIncrement, x = x0, y = y0;
+
+	if (fabs(dx) > fabs(dy))//æ–œç‡çš„ç»å¯¹å€¼å°äº1
+		steps = fabs(dx);
+	else//æ–œç‡çš„ç»å¯¹å€¼å¤§äºç­‰äº1
+		steps = fabs(dy);
+	xIncrement = float(dx) / float(steps);//ä¸‹ä¸€ä¸ªç‚¹è·ç¦»ä¸Šä¸€ä¸ªç‚¹xä¸yå„è‡ªçš„å¢é‡
+		yIncrement = float(dy) / float(steps);
+	setPixel(round(x), round(y));
+	for (k = 0; k < steps; k++) {//é€šè¿‡å¾ªç¯å°†ç›´çº¿é€šè¿‡ä¸€ä¸ªä¸€ä¸ªçš„ç‚¹ç”»å‡º
+			x += xIncrement;
+		y += yIncrement;
+		setPixel(round(x), round(y));
+	}
+}
+void displayDDA(void)
+{
+	glClear(GL_COLOR_BUFFER_BIT);
+	//æ¸…ç©ºæ˜¾ç¤ºçª—å£
+		glColor3f(0.0, 0.0, 1.0);
+	//æŒ‡å®šå‰æ™¯è‰²ï¼ˆå½“å‰ç»˜åˆ¶é¢œè‰²ï¼‰ä¸ºè“è‰²
+		lineDDA(200, 300, 300, 200);//ç›´çº¿ç®—æ³•å‡½æ•°è°ƒç”¨ï¼Œå‚æ•°ä¸ºï¼ˆx0, y0ï¼‰,(xEnd, yEnd)
+		glFlush();
+	//ä½¿ç»˜åˆ¶ç«‹å³åæ˜ åˆ°å±å¹•ä¸Š
+}
+int main(int argc, char** argv)
+{
+	glutInit(&argc, argv);
+	//åˆå§‹GLUT.
+		glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+	//è®¾å®šæ˜¾ç¤ºæ¨¡å¼
+		glutInitWindowPosition(100, 100);
+	//è®¾å®šçª—å£ä½ç½®
+		glutInitWindowSize(400, 400);
+	//è®¾å®šçª—å£å¤§å°
+		glutCreateWindow("An Example OpenGL Program"); //ç”¨å‰é¢æŒ‡å®šå‚æ•°åˆ›å»ºçª—å£ï¼Œå¹¶å®šä¹‰çª—å£åç§°
+		init();
+	//è¿›è¡Œä¸€äº›åˆå§‹åŒ–å·¥ä½œ
+		glutDisplayFunc(displayDDA);
+	//æŒ‡å®šç»˜åˆ¶çš„å›è°ƒå‡½æ•°
+		glutMainLoop();
+	//è¿›å…¥æ— ç©·å¾ªç¯ï¼Œç­‰å¾…äº‹ä»¶å¤„ç†
+		return 0;
 }
